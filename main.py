@@ -181,7 +181,7 @@ def main(screen):
     if len(sys.argv) == 2:
         difficulty = int(sys.argv[1])
 
-    screen.addstr(max_y//2, 10, "Use 'wasd' to move shooter, 'q' to shoot")
+    screen.addstr(max_y//2, 10, "Use 'wasd' to move shooter, spacebar to shoot")
     screen.addstr(max_y//2 + 2, 20, "Press 's' to start")
     screen.refresh()
 
@@ -230,7 +230,7 @@ def main(screen):
                 if key in dir_keys:
                     dir = get_direction(key)
                     shoot.move(dir)
-                if key == "q":
+                if key == " ":
                     shoot.shoot()
         except (curses.error):
             pass
