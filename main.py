@@ -212,6 +212,9 @@ def main(screen):
                 if centi.finished():
                     # you dead
                     break
+            else:
+                outcome = "WIN"
+                break
         centi.draw(win)
 
         win.nodelay(True)
@@ -223,10 +226,6 @@ def main(screen):
                     shoot.move(dir)
                 if key == "q":
                     shoot.shoot()
-                    if not centi.alive():
-                        # you win
-                        outcome = "WIN"
-                        break
         except (curses.error):
             pass
 
