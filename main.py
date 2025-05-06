@@ -130,6 +130,9 @@ class Shooter:
         self._centipede = centipede
         self._pos = field.get_shooter_start()
 
+    def dead(self):
+        return self._centipede.check_collision(self._pos)
+
     def draw(self, win):
         x, y = self._pos
         if not self._field.check_boundary((x-1, y-1)):
@@ -205,6 +208,9 @@ def main(screen):
         win.box()
 
         field.draw(win)
+
+        if shoot.dead():
+            break
 
         if count % 8 == 0:
             if centi.alive():
