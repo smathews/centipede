@@ -1,4 +1,4 @@
-import curses, time, random
+import curses, time, random, sys
 
 max_x = 60
 max_y = 20
@@ -22,7 +22,7 @@ class Field:
         for i in range(max_y - 1):
             y = i + 1
             x_check = []
-            for _ in range(self._difficulty):
+            for _ in range(random.randint(0, self._difficulty)):
                 x = random.randint(1, max_x)
                 if x in x_check:
                     continue
@@ -44,7 +44,14 @@ class Field:
         max_x, max_y = self._size
         if x <= 0 or y <= 1:
             return True
-        if x >= max_x or y >= max_y:
+        if x >= max_x or y >= max_y + 1:
+            return True
+        return False
+    
+    def check_finish(self, pos):
+        _, y = pos
+        _, max_y = self._size
+        if y >= max_y:
             return True
         return False
 
@@ -75,6 +82,14 @@ class Centipede:
         self._body = [(1,1)]
         self._direction = (1,0)
 
+    def alive(self):
+        return len(self._body) > 0
+    
+    def finished(self):
+        if self.alive():
+            return self._field.check_finish(self._body[0])
+        return False
+
     def draw(self, win):
         for seg in self._body:
             x, y = seg
@@ -100,6 +115,14 @@ class Centipede:
         if len(self._body) > self._length:
             self._body = self._body[:self._length]
 
+    def check_collision(self, pos, damage=False):
+        for seg in self._body:
+            if seg == pos:
+                if damage:
+                    self._length -= 1
+                return True
+        return False
+
 class Shooter:
     def __init__(self, field, centipede):
         self._bullet = None
@@ -109,21 +132,27 @@ class Shooter:
 
     def draw(self, win):
         x, y = self._pos
-        win.addch(y, x-1, ord("/"))
+        if not self._field.check_boundary((x-1, y-1)):
+            win.addch(y, x-1, ord("/"))
         win.addch(y, x, ord("^"))
-        win.addch(y, x+1, ord('\\'))
+        if not self._field.check_boundary((x+1, y-1)):
+            win.addch(y, x+1, ord('\\'))
         if self._bullet != None:
             bx, by = self._bullet
             win.addch(by, bx, ord("|"))
-            if self._field.check_collision(self._bullet, True) or self._field.check_boundary(self._bullet):
-                self._bullet = None
+            if (self._field.check_collision(self._bullet, True) or
+                self._field.check_boundary(self._bullet) or
+                self._centipede.check_collision(self._bullet, True)):
+                    self._bullet = None
             else:
                 self._bullet = (bx, by-1)
 
     def move(self, direction):
         x, y = self._pos
         dx, dy = direction
-        self._pos = (x+dx, y+dy)
+        n = (x+dx, y+dy)
+        if not (self._field.check_collision(n) or self._field.check_boundary(n)):
+            self._pos = n
 
     def shoot(self):
         x, y = self._pos
@@ -145,13 +174,29 @@ def main(screen):
     curses.curs_set(0)
     screen.clear()
 
+    difficulty = 4
+    if len(sys.argv) == 2:
+        difficulty = int(sys.argv[1])
+
+    screen.addstr(max_y//2, 10, "Use 'wasd' to move shooter, 'q' to shoot")
+    screen.addstr(max_y//2 + 2, 20, "Press 's' to start")
+    screen.refresh()
+
+    while True:
+        key = screen.getkey()
+        if key == "s":
+            break
+        if key == "q":
+            return
+
     win = curses.newwin(max_y + 2, max_x + 2, 2, 5)
     win.box()
 
-    field = Field((max_x, max_y), difficulty=4)
+    field = Field((max_x, max_y), difficulty)
     centi = Centipede(10, field)
     shoot = Shooter(field, centi)
 
+    outcome = "LOSE"
 
     count = 0
     while True:
@@ -162,7 +207,11 @@ def main(screen):
         field.draw(win)
 
         if count % 8 == 0:
-            centi.move()
+            if centi.alive():
+                centi.move()
+                if centi.finished():
+                    # you dead
+                    break
         centi.draw(win)
 
         win.nodelay(True)
@@ -174,6 +223,10 @@ def main(screen):
                     shoot.move(dir)
                 if key == "q":
                     shoot.shoot()
+                    if not centi.alive():
+                        # you win
+                        outcome = "WIN"
+                        break
         except (curses.error):
             pass
 
@@ -183,7 +236,12 @@ def main(screen):
         time.sleep(0.01)
     
 
+    screen.clear()
+    screen.addstr(max_y//2, 10, "You %s!!!!!!!!!!!!!!!!!!!!" % outcome)
+    screen.addstr(max_y//2 + 2, 15, "Press 'e' to exit")
     screen.refresh()
-    screen.getkey()
+
+    while key != "e":
+        key = screen.getkey()
 
 curses.wrapper(main)
