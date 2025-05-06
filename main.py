@@ -42,7 +42,7 @@ class Field:
     def check_boundary(self, pos):
         x, y = pos
         max_x, max_y = self._size
-        if x <= 0 or y <= 1:
+        if x <= 0 or y <= 0:
             return True
         if x >= max_x or y >= max_y + 1:
             return True
@@ -74,6 +74,10 @@ class Field:
     def get_shooter_start(self):
         max_x, max_y = self._size
         return (max_x//2, max_y)
+
+    def get_shooter_limit(self):
+        _, max_y = self._size
+        return max_y - (max_y // 4)
 
 class Centipede:
     def __init__(self, length, field):
@@ -154,7 +158,7 @@ class Shooter:
         x, y = self._pos
         dx, dy = direction
         n = (x+dx, y+dy)
-        if not (self._field.check_collision(n) or self._field.check_boundary(n)):
+        if n[1] != self._field.get_shooter_limit() and not (self._field.check_collision(n) or self._field.check_boundary(n)):
             self._pos = n
 
     def shoot(self):
